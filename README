@@ -1,0 +1,7 @@
+required:
+python
+python-opencv
+numpy
+
+
+./dna_body_map.py
