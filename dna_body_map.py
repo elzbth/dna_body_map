@@ -13,13 +13,43 @@ from math import * # trigonometry
 import Image
 
 
+CALIBRATE = 0
+BACKGROUND = 1
+PROJECT = 2
+
+mode = CALIBRATE
+
+projected = []
+real = []
+
 
 # empty callback function, necessary for the trackbars 
 def no_func(i):
     pass
 
+# mouse callback function
+def draw_translation(event,x,y,flags,param):
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print "click"
+        print x,
+        drawing = True
+        ix = x
+        iy = y
+        projected.append((x,y))
+
+        
+
+    elif event == cv2.EVENT_MOUSEMOVE:
+        pass
+            
+
+    elif event == cv2.EVENT_LBUTTONUP:
+        real.append((x,y))
+
+
 # create video capture
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.cv.CV_CAP_PROP_FPS, 60)
 print "to take background picture press space"
 
@@ -58,9 +88,12 @@ cv2.namedWindow('frame', cv2.WINDOW_AUTOSIZE)
 cv2.namedWindow('thresh', cv2.WINDOW_AUTOSIZE)
 
 # for window that will be mapping, enable openGL
-cv2.namedWindow('mapping', cv2.WINDOW_AUTOSIZE, cv2.WINDOW_OPENGL)
+# cv2.namedWindow('mapping', cv2.WINDOW_AUTOSIZE, cv2.WINDOW_OPENGL)
+cv2.namedWindow('proj_frame')
+cv2.setMouseCallback('proj_frame',draw_translation)
+# proj_frame = np.zeros(background.shape, np.uint8)
+# proj_frame.fill(255)
 
-# cv2.namedWindow('contours', cv2.WINDOW_AUTOSIZE)
 
 
 
@@ -103,7 +136,7 @@ while(1):
     cutoff = cv2.getTrackbarPos('thresh_cutoff', 'vars')
     ret,thresh = cv2.threshold(bw.copy(),cutoff,255,cv2.THRESH_BINARY)
     # thresh = cv2.inRange(bw2, np.array((100)), np.array((200)))
-    cv2.imshow('thresh',thresh)
+    # cv2.imshow('thresh',thresh)
 
 
     # reduce back blobs within white profile with "closing"
@@ -163,8 +196,8 @@ while(1):
     mask_inv = cv2.bitwise_not(mask)
 
     
-    cv2.imshow('mask', mask)
-    cv2.imshow('inv_mask', mask_inv)
+    # cv2.imshow('mask', mask)
+    # cv2.imshow('inv_mask', mask_inv)
 
 
 
@@ -174,10 +207,23 @@ while(1):
     # subtract mask from frame, pixels inside the mask are unchanged (-0), those in the background go to 0 (255-255)
     db_masked_frame = masked_frame - mask_inv
 
+
+    # proj_frame = cv2.add(proj_frame, mask_inv)
+    # proj_frame = proj_frame - mask_inv
+    # print projected
+    # print real
+
+    for (ix, iy), (x,y) in zip(projected, real):
+        cv2.circle(frame,(ix,iy),5,(0,0,255),-1)
+        cv2.line(frame, (ix,iy), (x,y) , (0,0,255), 3)
+        cv2.circle(frame,(x,y),5,(0,0,255),-1)
+
+
     #display various windows
     cv2.imshow('frame',frame)
-    cv2.imshow('frame_masked',masked_frame)
-    cv2.imshow('db_masked_frame', db_masked_frame)
+    #cv2.imshow('frame_masked',masked_frame)
+    # cv2.imshow('db_masked_frame', db_masked_frame)
+    cv2.imshow('proj_frame', frame)
 
     # if key pressed is 'Esc', exit the loop
 
