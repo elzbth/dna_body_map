@@ -5,3 +5,8 @@ numpy
 
 
 ./dna_body_map.py
+
+hotkeys:
+1 - background acquisition mode
+2 - calibration mode
+3 - projection mode
