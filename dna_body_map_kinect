@@ -1,0 +1,443 @@
+#!/usr/bin/python
+
+# import opencv
+import cv2
+import numpy as np
+import sys
+
+import freenect
+
+# import opengl stuff
+from OpenGL.GL import *
+from OpenGL.GLU import *
+import random
+from math import * # trigonometry
+import Image
+
+# 0
+DEFAULT = 48
+# #1
+# BACKGROUND = 49
+2
+#2
+CALIBRATE = 50
+#3
+PROJECT = 51
+
+mode = DEFAULT
+
+projected = []
+real = []
+
+
+# empty callback function, necessary for the trackbars 
+def no_func(i):
+    pass
+
+# mouse callback function
+def draw_translation_calibration(event,x,y,flags,param):
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print "click"
+        print x,
+        drawing = True
+        ix = x
+        iy = y
+        projected.append([x,y])
+
+        
+
+    elif event == cv2.EVENT_MOUSEMOVE:
+        pass
+            
+
+    elif event == cv2.EVENT_LBUTTONUP:
+        real.append([x,y])
+
+
+# # create video capture
+# cap = cv2.VideoCapture(0)
+# cap.set(cv2.cv.CV_CAP_PROP_FPS, 60)
+
+
+# # this background subtractor is supposedly la leche but is not recognized. Problem with CV version?
+# # fgbg = cv2.createBackgroundSubtractorMOG()
+
+# # read first frame and set default background image to 0s 
+# _,frame = cap.read()
+# frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+# # background = np.zeros(frame.shape,np.uint8)
+
+# # make wndow for trackbars for various variables
+# cv2.namedWindow('vars')
+
+# # make viz windows
+
+# cv2.namedWindow('bw', cv2.WINDOW_AUTOSIZE)
+
+# cv2.namedWindow('frame', cv2.WINDOW_AUTOSIZE)
+
+# cv2.namedWindow('thresh', cv2.WINDOW_AUTOSIZE)
+
+# for window that will be mapping, enable openGL
+# cv2.namedWindow('mapping', cv2.WINDOW_AUTOSIZE, cv2.WINDOW_OPENGL)
+
+# cv2.namedWindow('calibration', cv2.WND_PROP_FULLSCREEN)
+
+cv2.namedWindow('calibration', cv2.WINDOW_AUTOSIZE)
+# cv2.resizeWindow('calibration', 1024, 768)
+
+cv2.setMouseCallback('calibration', draw_translation_calibration)
+
+
+# cv2.namedWindow('Depth', cv2.WINDOW_AUTOSIZE)
+cv2.namedWindow('Thresh', cv2.WINDOW_AUTOSIZE)
+# cv2.namedWindow('Proj', cv2.WINDOW_AUTOSIZE)
+
+
+near_threshold = 0
+far_threshold = 100 
+
+
+cv2.createTrackbar('near_threshold', 'Thresh', 0, 2048,  no_func)
+cv2.createTrackbar('far_threshold',     'Thresh', 0, 2048, no_func)
+
+# projected_image = np.zeros((480,680,3), np.uint8)
+
+image = cv2.imread('/home/lala/fun/dev/BOS_installation/genome2.png')
+projected_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+# projected_image = cv2.resize(projected_image, (1024, 768))
+
+proj_img_size = np.zeros((768,1024,3), np.uint8)
+
+
+color1 = np.zeros((480,640,3), np.uint8)
+
+color1[::] = (255,0,0) # B, G, R
+
+color2 = np.zeros((480,640,3), np.uint8)
+
+color2[::] = (255,0,0) # B, G, R
+
+color3 = np.zeros((480,640,3), np.uint8)
+
+color3[::] = (255,0,0) # B, G, R
+
+kernel = np.ones((5,5),np.float32)/25
+
+
+blur = False
+
+
+
+
+
+
+# # adjustable variables
+# # cutoff for thresholding
+# cutoff = 100
+# cv2.createTrackbar('thresh_cutoff', 'vars', cutoff, 255, no_func)
+
+# # approx_frac = 10
+# # cv2.createTrackbar('approx_frac', 'vars', approx_frac, 500, no_func)
+
+# # kernel size for closing
+# kernel_size = 5
+# cv2.createTrackbar('kernel_size', 'Thresh', kernel_size, 500, no_func)
+
+
+
+# loop while waiting for background image capture
+while(1):
+
+
+
+
+    key = cv2.waitKey(33)
+    if key in [DEFAULT, CALIBRATE, PROJECT]:
+        mode = key
+        print mode
+        if mode == CALIBRATE:
+            projected = []
+            real = []
+            # cv2.resizeWindow('calibration', 1024, 768)
+            cv2.setWindowProperty('calibration', cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+
+        if mode == PROJECT:
+            cv2.namedWindow('mapping')
+            
+            # cv2.resizeWindow('calibration', 1024, 768)
+
+            # cv2.namedWindow('mapping', cv2.WND_PROP_FULLSCREEN)
+            # cv2.setWindowProperty('mapping', cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+
+
+
+
+    depth, timestamp = freenect.sync_get_depth()
+    # projected_image[::] = (255,0,0) # B, G, R
+
+
+
+
+    # _,frame = cap.read()
+
+    # if mode == BACKGROUND:
+
+    #     background = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+
+    #     background = cv2.blur(background,(10,10))
+    #     cv2.imshow('bck', background)
+
+
+    #     # key press space takes background image and breaks 
+    #     if cv2.waitKey(33) == 32:
+    #         mode = DEFAULT
+    #         # KILL BCK WINDOW
+
+
+    if mode == CALIBRATE:
+
+
+        cv2.setWindowProperty('calibration', cv2.WND_PROP_FULLSCREEN, cv2.cv.CV_WINDOW_FULLSCREEN)
+
+        
+
+        for (ix, iy), (x,y) in zip(projected, real):
+            cv2.circle(db_masked_frame,(ix,iy),5,(0,0,255),-1)
+            cv2.line(db_masked_frame, (ix,iy), (x,y) , (0,0,255), 3)
+            cv2.circle(db_masked_frame,(x,y),5,(0,0,255),-1)
+
+        # cv2.resizeWindow('calibration', 1024, 768)
+        cv2.imshow('calibration', db_masked_frame)
+
+        if cv2.waitKey(33) == 32:
+            mode = DEFAULT
+            # TODO CALCULATE HOMOGRAPHY MATRIX 
+            # KILL CALIBRATION WINDOW
+
+
+    # this mode is default, and can be used to reset from another mode
+    if mode == DEFAULT or mode == PROJECT:
+    
+        # naive background substraction: subtract first frame
+        # bw = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        # bw = cv2.blur(bw, (10,10))
+        # bw = bw - background
+
+        # # fancy background subtraction not wrking now
+        # # bw = frame
+        # # bw2 = fgbg.apply(bw)
+
+
+
+
+        near_threshold = cv2.getTrackbarPos('near_threshold','Thresh')
+        far_threshold = cv2.getTrackbarPos('far_threshold','Thresh')
+
+        # print np.max(depth)
+        # print np.min(depth)
+        #print depth.shape
+
+        #depth_scale = depth - 800
+
+        # depth_scale = (255.0 / 2407.0) * depth
+
+
+        # cv2.imshow('Depth', depth_scale)
+
+        thresh = 255 * np.logical_and(depth > near_threshold,
+                                     depth < far_threshold)
+        thresh = thresh.astype(np.uint8)
+
+        thresh = cv2.resize(thresh, (1024, 768))
+        
+
+
+
+        # cv2.imshow('bw',bw)
+
+        # operations on images modify the source image, so make a copy to operate on 
+
+        # cutoff = cv2.getTrackbarPos('thresh_cutoff', 'vars')
+        # ret,thresh = cv2.threshold(bw.copy(),cutoff,255,cv2.THRESH_BINARY)
+        # # cv2.imshow('thresh',thresh)
+
+
+        # # reduce back blobs within white profile with "closing"
+        # # kernel size influences what size region to close
+        # kernel_size = cv2.getTrackbarPos('kernel_size', 'Thresh')
+        # if kernel_size < 1:
+        #     kernel_size = 1
+        # kernel = np.ones((kernel_size,kernel_size),np.uint8)
+        # # closing = cv2.morphologyEx(thresh.copy(), cv2.MORPH_CLOSE, kernel)
+        
+
+        # cv2.imshow('closing',closing)
+
+        # # find contours in the threshold image
+        # contours,hierarchy = cv2.findContours(thresh.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+
+        # if len(contours) > 0:
+        #     print "CONTOURS"
+        #     # sort contours by decreasing area
+        #     sorted_contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
+
+        #     # this is to smooth contours -- not needed i think
+        #     # approx_frac = cv2.getTrackbarPos('approx_frac', 'vars')
+
+
+        #     # for top four contours:
+        #     for cnt in sorted_contours[:3]:
+
+        #         # calculate moments and centroid, and draw a circle at centroid
+        #         M = cv2.moments(cnt)
+        #         if M['m00'] > 0 and M['m00'] > 0:
+        #             cx,cy = int(M['m10']/M['m00']), int(M['m01']/M['m00'])
+        #             cv2.circle(projected_image,(cx,cy),5,255,-1)
+
+
+        #         # calculate smoothed contour
+        #         # epsilon = (approx_frac / 10000.0) * cv2.arcLength(cnt,True)
+        #         # approx = cv2.approxPolyDP(cnt,epsilon,True)
+        #         # cv2.drawContours(frame, [approx], -1, (0,0,255), 2)
+
+        #     # calculate bouding rectangle of best contour
+        #     x,y,w,h = cv2.boundingRect(sorted_contours[0])
+        #     cv2.rectangle(projected_image,(x,y),(x+w,y+h),(0,255,0),2)
+
+        #     # draw best contour over frame in red
+        #     cv2.drawContours(projected_image, sorted_contours[0], -1, (0,0,255), 2)
+
+
+        #### COLORED IMG VERSION
+        # for x,y in np.ndindex(thresh.shape):
+        #     if thresh[x,y]:
+        #         projected_image[x,y] = (255,0,0)
+        #     else:
+        #         projected_image[x,y] = (0,0,0)
+
+        ##### END COLORED 
+
+
+
+
+        if mode == DEFAULT:
+            cv2.imshow('Thresh', thresh)
+
+
+            ## make mask to mask in black all the image that is not inside the contour:
+        #     # make matrix of zeros (black) same size as frame
+        #     mask = np.zeros(thresh.shape,np.uint8)
+
+        #     # draw best contour in white on black mask, and set to fill with thickness=-1
+        #     cv2.drawContours(mask,[sorted_contours[0]],0,(255,255,255),thickness=-1)
+
+
+        #     # invert the mask, now profile is balck (0) and background is white (255)
+        #     mask_inv = cv2.bitwise_not(mask)
+
+            
+
+        #     # add mask to frame, pixels inside the profile are unchanged (+0), those in the background are maxed out (+255)
+        #     masked_frame = cv2.add(frame, mask_inv)
+
+        #     # subtract mask from frame, pixels inside the mask are unchanged (-0), those in the background go to 0 (255-255)
+        #     db_masked_frame = masked_frame - mask_inv
+
+        #     # cv2.imshow('frame_masked',masked_frame)
+        #     cv2.imshow('db_masked_frame', db_masked_frame)
+
+
+        mask_inv = cv2.bitwise_not(thresh)
+
+
+        if cv2.waitKey(33) == 98:
+
+            blur = not blur
+
+
+        if blur:
+            print "blur"
+
+            blurred_img = cv2.filter2D(projected_image,-1,kernel)
+            masked_frame = cv2.add(blurred_img, mask_inv)
+
+
+        else:
+            masked_frame = cv2.add(projected_image, mask_inv)
+
+
+        
+
+        # add mask to frame, pixels inside the profile are unchanged (+0), those in the background are maxed out (+255)
+        # masked_frame = cv2.add(projected_image, mask_inv)
+
+
+        # subtract mask from frame, pixels inside the mask are unchanged (-0), those in the background go to 0 (255-255)
+        db_masked_frame = masked_frame - mask_inv
+
+
+
+        # cv2.imshow('Proj', db_masked_frame)
+
+
+
+        # ############## BW ###################
+
+        
+
+        # ############## END BW ##############
+
+
+        ############### COLOR ################
+
+        # masked_frame_color = cv2.cvtColor(projected_image,cv2.COLOR_GRAY2RGB)
+
+        # mask_inv_color = cv2.cvtColor(mask_inv,cv2.COLOR_GRAY2RGB)
+
+        # db_masked_frame_color = masked_frame_color - mask_inv_color
+
+        # cv2.imshow('Proj', db_masked_frame_color)
+
+        ################  END COLOR ###############
+
+
+        # db_masked_frame_color = cv2.cvtColor(db_masked_frame,cv2.COLOR_GRAY2RGB)
+
+        # print len(db_masked_frame_color)
+        # print len(db_masked_frame_color[0])
+        # print len(color1)
+        # print len(color1[0])
+
+        # db_masked_frame_tint = cv2.addWeighted(db_masked_frame_color,0.7,color1,0.3,0)
+
+
+
+
+
+        # #display various windows
+        # cv2.imshow('frame',frame)
+        
+    if mode  == PROJECT:
+        # calculate homographied contour and project
+
+        # matrix = cv2.getPerspectiveTransform(np.array(projected), np.array(real))
+
+        # have to convert coordinates to float and list to np array 
+        p = np.float32(projected)
+        r = np.float32(real)
+        matrix, mask = cv2.findHomography(p, r)
+
+        projection = cv2.warpPerspective(db_masked_frame, matrix, (1024,768)) 
+        
+        cv2.imshow('mapping', projection)
+
+
+    # if key pressed is 'Esc', exit the loop
+
+
+    if cv2.waitKey(33)== 27:
+        cv2.destroyAllWindows()
+        sys.exit(0)
+

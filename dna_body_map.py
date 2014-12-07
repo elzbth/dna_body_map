@@ -53,7 +53,7 @@ def draw_translation_calibration(event,x,y,flags,param):
 
 
 # create video capture
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.cv.CV_CAP_PROP_FPS, 60)
 
 
